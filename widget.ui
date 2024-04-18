@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Widget</class>
+ <widget class="QWidget" name="Widget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>640</width>
+    <height>267</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Widget</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0">
+    <widget class="QGroupBox" name="gb_screen">
+     <property name="title">
+      <string>Screen</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_3">
+      <item>
+       <widget class="QLabel" name="l_screen_video">
+        <property name="text">
+         <string>Video Source</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="cb_screen_video">
+        <item>
+         <property name="text">
+          <string>None</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="l_screen_compression">
+        <property name="text">
+         <string>Compression</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="cb_screen_compression">
+        <item>
+         <property name="text">
+          <string>Compressed</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Uncompressed</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="l_screen_frame_rate">
+        <property name="text">
+         <string>Frame Rate</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="cb_screen_frame_rate">
+        <item>
+         <property name="text">
+          <string>60p</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>59.95p (NTSC)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>50p</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>30p</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>29.97p (NSTC)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>25 (PAL)</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="l_screen_audio">
+        <property name="text">
+         <string>Audio Source</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="cb_screen_audio">
+        <item>
+         <property name="text">
+          <string>None</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QGroupBox" name="gb_camera">
+     <property name="title">
+      <string>Camera</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <item>
+       <widget class="QLabel" name="l_camera_video">
+        <property name="text">
+         <string>Video Source</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="cb_camera_video">
+        <item>
+         <property name="text">
+          <string>None</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="l_camera_compression">
+        <property name="text">
+         <string>Compression</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="cb_camera_compression">
+        <item>
+         <property name="text">
+          <string>Compressed</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Uncompressed</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="l_camera_frame_rate">
+        <property name="text">
+         <string>Frame Rate</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="cb_camera_frame_rate">
+        <item>
+         <property name="text">
+          <string>60p</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>59.95p (NTSC)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>50p</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>30p</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>29.97p (NSTC)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>25 (PAL)</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="l_camera_audio">
+        <property name="text">
+         <string>Audio Source</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="cb_camera_audio">
+        <item>
+         <property name="text">
+          <string>None</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QPushButton" name="pb_start">
+     <property name="text">
+      <string>Start</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QPushButton" name="pb_stop">
+     <property name="text">
+      <string>Stop</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
