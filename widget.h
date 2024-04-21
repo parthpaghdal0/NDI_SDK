@@ -25,6 +25,7 @@ public:
 public slots:
     void on_pb_start_clicked();
     void on_pb_stop_clicked();
+    void on_pb_close_clicked();
 
     void on_cb_screen_video_currentIndexChanged(int );
     void on_cb_screen_compression_currentIndexChanged(int );
@@ -38,6 +39,12 @@ public slots:
     void on_screen_timeout();
     void on_camera_timeout();
     void on_camera_image(int id, const QImage&);
+
+protected:
+    void mousePressEvent(QMouseEvent *event);
+    void mouseMoveEvent(QMouseEvent *event);
+    void mouseReleaseEvent(QMouseEvent *event);
+    void paintEvent(QPaintEvent *event);
 
 private:
     Ui::Widget *ui;
@@ -61,5 +68,8 @@ private:
     void makeVideoFrame_RGBA(NDIlib_video_frame_v2_t *frame, QPixmap pix);
     void makeVideoFrame_UYVY(NDIlib_video_frame_v2_t *frame, QPixmap pix);
     void clearFrames();
+
+    QPoint m_prevPos;
+    bool m_pressed;
 };
 #endif // WIDGET_H

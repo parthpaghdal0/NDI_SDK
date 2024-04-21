@@ -2,8 +2,11 @@
 #include "ui_widget.h"
 
 #include <QDebug>
+#include <QMouseEvent>
+#include <QPainter>
 
 #include "utils.h"
+#include "global.h"
 
 float frameRates[] = { 60, 60, 50, 30, 30, 25 };
 
@@ -12,6 +15,10 @@ Widget::Widget(QWidget *parent)
     , ui(new Ui::Widget)
 {
     ui->setupUi(this);
+    setStyleSheet(loadScss("main"));
+
+    setMouseTracking(false);
+    m_pressed = false;
 
     m_screens.push_back(0);
     QList<QScreen*> screens = QGuiApplication::screens();
@@ -111,7 +118,7 @@ void Widget::on_pb_start_clicked()
     m_imageCapture->setCaptureDestination(QCameraImageCapture::CaptureToBuffer);
     QObject::connect(m_imageCapture, SIGNAL(imageCaptured(int, const QImage&)), this, SLOT(on_camera_image(int, const QImage&)));
     m_curCamera->start();
-    QSize camSize = m_curCamera->supportedViewfinderResolutions().last();
+    QSize camSize = m_curCamera->viewfinderSettings().resolution();
     NDI_video_frame_camera.xres = camSize.width();
     NDI_video_frame_camera.yres = camSize.height();
     NDI_video_frame_camera.FourCC = cameraComp == 0 ? NDIlib_FourCC_video_type_UYVY : NDIlib_FourCC_video_type_RGBA;
@@ -157,6 +164,11 @@ void Widget::on_pb_stop_clicked()
         delete m_imageCapture;
     }
     m_imageCapture = NULL;
+}
+
+void Widget::on_pb_close_clicked()
+{
+    exit(0);
 }
 
 void Widget::makeVideoFrame_RGBA(NDIlib_video_frame_v2_t *frame, QPixmap pix)
@@ -260,4 +272,45 @@ void Widget::on_cb_screen_video_currentIndexChanged(int index)
     if (ui->pb_start->isEnabled()) return;
     on_pb_stop_clicked();
     on_pb_start_clicked();
+}
+
+void Widget::mousePressEvent(QMouseEvent *event)
+{
+    for (const QObject *child : children()) {
+        if (const QPushButton *button = qobject_cast<const QPushButton *>(child)) {
+            if (button->geometry().contains(event->pos())) {
+                return;
+            }
+        } else if (const QComboBox *comboBox = qobject_cast<const QComboBox *>(child)) {
+            if (comboBox->geometry().contains(event->pos())) {
+                return;
+            }
+        }
+    }
+
+    m_pressed = true;
+    m_prevPos = event->globalPos();
+}
+
+void Widget::mouseMoveEvent(QMouseEvent *event)
+{
+    if (m_pressed)
+        move(event->globalPos() - m_prevPos + pos());
+    m_prevPos = event->globalPos();
+}
+
+void Widget::mouseReleaseEvent(QMouseEvent *event)
+{
+    m_pressed = false;
+}
+
+void Widget::paintEvent(QPaintEvent *event)
+{
+    QPainter painter(this);
+    QPen pen(QColor(25, 156, 244));
+    pen.setWidth(2);
+    painter.setPen(pen);
+
+    painter.setBrush(Qt::NoBrush);
+    painter.drawRoundedRect(rect(), 13, 13);
 }

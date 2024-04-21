@@ -20,6 +20,14 @@ int main(int argc, char *argv[])
 
     QApplication a(argc, argv);
     Widget w;
+
+    const int radius = 10;
+
+    QPainterPath path;
+    path.addRoundedRect(w.rect(), radius, radius);
+    QRegion mask = QRegion(path.toFillPolygon().toPolygon());
+    w.setMask(mask);
+
     w.show();
     int ret = a.exec();
 

@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>resources/scss/main.scss</file>
+        <file>resources/images/dropdown.png</file>
+        <file>resources/images/logo.png</file>
+    </qresource>
+</RCC>
