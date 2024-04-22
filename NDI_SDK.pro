@@ -9,11 +9,13 @@ CONFIG += c++11
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    audioinfo.cpp \
     global.cpp \
     main.cpp \
     widget.cpp
 
 HEADERS += \
+    audioinfo.h \
     global.h \
     utils.h \
     widget.h

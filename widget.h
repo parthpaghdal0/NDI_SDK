@@ -8,11 +8,14 @@
 #include <QCameraInfo>
 #include <QCameraImageCapture>
 #include <QAudioDeviceInfo>
+#include <QAudioInput>
 #include <QTimer>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Widget; }
 QT_END_NAMESPACE
+
+class AudioInfo;
 
 class Widget : public QWidget
 {
@@ -38,6 +41,8 @@ public slots:
 
     void on_screen_timeout();
     void on_camera_timeout();
+    void on_audio_camera(float* data, qint64 len);
+    void on_audio_screen(float* data, qint64 len);
     void on_camera_image(int id, const QImage&);
 
 protected:
@@ -53,6 +58,8 @@ private:
     NDIlib_send_instance_t pNDI_send_screen;
     NDIlib_video_frame_v2_t NDI_video_frame_camera;
     NDIlib_video_frame_v2_t NDI_video_frame_screen;
+    NDIlib_audio_frame_v2_t NDI_audio_frame_camera;
+    NDIlib_audio_frame_v2_t NDI_audio_frame_screen;
 
     QList<QScreen*> m_screens;
     QList<QCameraInfo> m_cameras;
@@ -63,6 +70,8 @@ private:
 
     QScreen* m_curScreen;
     QCamera* m_curCamera;
+    AudioInfo* m_curAudioScreen;
+    AudioInfo* m_curAudioCamera;
     QCameraImageCapture* m_imageCapture;
 
     void makeVideoFrame_RGBA(NDIlib_video_frame_v2_t *frame, QPixmap pix);

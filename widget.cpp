@@ -7,6 +7,7 @@
 
 #include "utils.h"
 #include "global.h"
+#include "audioinfo.h"
 
 float frameRates[] = { 60, 60, 50, 30, 30, 25 };
 
@@ -57,10 +58,14 @@ Widget::Widget(QWidget *parent)
 
     m_curCamera = NULL;
     m_curScreen = NULL;
+    m_curAudioCamera = NULL;
+    m_curAudioScreen = NULL;
     m_imageCapture = NULL;
 
     NDI_video_frame_camera.p_data = NULL;
     NDI_video_frame_screen.p_data = NULL;
+    NDI_audio_frame_camera.p_data = NULL;
+    NDI_audio_frame_screen.p_data = NULL;
 
     m_screenTimer = new QTimer(this);
     connect(m_screenTimer, SIGNAL(timeout()), this, SLOT(on_screen_timeout()));
@@ -127,20 +132,42 @@ void Widget::on_pb_start_clicked()
     QAudioDeviceInfo screenAudio = m_audios[screenAudioIndex];
     QAudioDeviceInfo cameraAudio = m_audios[cameraAudioIndex];
 
-    QAudioFormat format;
-    format.setSampleRate(44100);
-    format.setChannelCount(1);
-    format.setSampleSize(16);
-    format.setCodec("audio/pcm");
-    format.setByteOrder(QAudioFormat::LittleEndian);
-    format.setSampleType(QAudioFormat::SignedInt);
+    NDI_audio_frame_screen.sample_rate = 44100;
+    NDI_audio_frame_screen.no_channels = 1;
+    NDI_audio_frame_screen.no_samples = 1764;
+    NDI_audio_frame_screen.p_data = (float*)malloc(sizeof(float) * 1764);
 
-    if (!screenAudio.isFormatSupported(format)) {
-        format = screenAudio.nearestFormat(format);
-    }
+    NDI_audio_frame_camera.sample_rate = 44100;
+    NDI_audio_frame_camera.no_channels = 1;
+    NDI_audio_frame_camera.no_samples = 1764;
+    NDI_audio_frame_camera.p_data = (float*)malloc(sizeof(float) * 1764);
+
+    m_curAudioScreen = new AudioInfo(screenAudio);
+    m_curAudioCamera = new AudioInfo(cameraAudio);
+    connect(m_curAudioCamera, SIGNAL(emitAudioData(float*, qint64)), this, SLOT(on_audio_camera(float*, qint64)));
+    connect(m_curAudioScreen, SIGNAL(emitAudioData(float*, qint64)), this, SLOT(on_audio_screen(float*, qint64)));
+
+    m_curAudioScreen->start();
+    m_curAudioCamera->start();
 
     m_screenTimer->start(1000.0f / frameRates[ui->cb_screen_frame_rate->currentIndex()]);
     m_cameraTimer->start(1000.0f / frameRates[ui->cb_camera_frame_rate->currentIndex()]);
+}
+
+void Widget::on_audio_camera(float *data, qint64 len)
+{
+    for (int i = 0; i < len; i++)
+        NDI_audio_frame_camera.p_data[i] = data[i];
+
+    NDIlib_send_send_audio_v2(pNDI_send_camera, &NDI_audio_frame_camera);
+}
+
+void Widget::on_audio_screen(float *data, qint64 len)
+{
+    for (int i = 0; i < len; i++)
+        NDI_audio_frame_screen.p_data[i] = data[i];
+
+    NDIlib_send_send_audio_v2(pNDI_send_screen, &NDI_audio_frame_screen);
 }
 
 void Widget::on_pb_stop_clicked()
@@ -164,6 +191,19 @@ void Widget::on_pb_stop_clicked()
         delete m_imageCapture;
     }
     m_imageCapture = NULL;
+
+    if (m_curAudioCamera)
+        delete m_curAudioCamera;
+    m_curAudioCamera = NULL;
+
+    if (m_curAudioScreen)
+        delete m_curAudioScreen;
+    m_curAudioScreen = NULL;
+
+    free(NDI_video_frame_camera.p_data);
+    free(NDI_video_frame_screen.p_data);
+    free(NDI_audio_frame_camera.p_data);
+    free(NDI_audio_frame_screen.p_data);
 }
 
 void Widget::on_pb_close_clicked()
