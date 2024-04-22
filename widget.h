@@ -9,13 +9,41 @@
 #include <QCameraImageCapture>
 #include <QAudioDeviceInfo>
 #include <QAudioInput>
+#include <QThread>
 #include <QTimer>
+#include <QMutex>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Widget; }
 QT_END_NAMESPACE
 
 class AudioInfo;
+
+struct SendData {
+    const char *buf;
+    int len;
+};
+
+class SenderThread : public QThread {
+    Q_OBJECT
+public:
+    SenderThread(NDIlib_send_instance_t instance, NDIlib_video_frame_v2_t *video_frame, NDIlib_audio_frame_v2_t *audio_frame, QObject *parent = nullptr);
+
+    void Start();
+    void Stop();
+    void Push(SendData *data);
+
+protected:
+    void run();
+
+    NDIlib_send_instance_t m_instance;
+    NDIlib_video_frame_v2_t* m_video_frame;
+    NDIlib_audio_frame_v2_t* m_audio_frame;
+    bool m_isRunning;
+    QList<SendData *> m_data;
+
+    QMutex m_mutex;
+};
 
 class Widget : public QWidget
 {
@@ -68,14 +96,19 @@ private:
     QTimer* m_screenTimer;
     QTimer* m_cameraTimer;
 
+    SenderThread* m_senderCamera;
+    SenderThread* m_senderScreen;
+    SenderThread* m_senderAudioCamera;
+    SenderThread* m_senderAudioScreen;
+
     QScreen* m_curScreen;
     QCamera* m_curCamera;
     AudioInfo* m_curAudioScreen;
     AudioInfo* m_curAudioCamera;
     QCameraImageCapture* m_imageCapture;
 
-    void makeVideoFrame_RGBA(NDIlib_video_frame_v2_t *frame, QPixmap pix);
-    void makeVideoFrame_UYVY(NDIlib_video_frame_v2_t *frame, QPixmap pix);
+    void makeVideoFrame_RGBA(SendData* data, QPixmap pix);
+    void makeVideoFrame_UYVY(SendData* data, QPixmap pix);
     void clearFrames();
 
     QPoint m_prevPos;

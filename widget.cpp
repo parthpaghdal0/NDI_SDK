@@ -11,6 +11,54 @@
 
 float frameRates[] = { 60, 60, 50, 30, 30, 25 };
 
+SenderThread::SenderThread(NDIlib_send_instance_t instance, NDIlib_video_frame_v2_t* video_frame, NDIlib_audio_frame_v2_t* audio_frame, QObject *parent) : QThread(parent){
+    m_instance = instance;
+    m_video_frame = video_frame;
+    m_audio_frame = audio_frame;
+}
+
+void SenderThread::Start() {
+    m_isRunning = true;
+    start();
+}
+
+void SenderThread::Stop() {
+    m_isRunning = false;
+    wait();
+    quit();
+}
+
+void SenderThread::Push(SendData *data) {
+    m_mutex.lock();
+    m_data.push_back(data);
+    m_mutex.unlock();
+}
+
+void SenderThread::run() {
+    while (m_isRunning) {
+        m_mutex.lock();
+        if (m_data.empty()) {
+            m_mutex.unlock();
+            continue;
+        }
+        SendData* data = m_data.first();
+        m_mutex.unlock();
+        m_data.pop_front();
+
+        if (m_video_frame) {
+            memmove(m_video_frame->p_data, data->buf, data->len);
+            NDIlib_send_send_video_v2(m_instance, m_video_frame);
+        }
+        if (m_audio_frame) {
+            memmove(m_audio_frame->p_data, data->buf, data->len);
+            NDIlib_send_send_audio_v2(m_instance, m_audio_frame);
+        }
+        delete data->buf;
+
+        delete data;
+    }
+}
+
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::Widget)
@@ -61,6 +109,11 @@ Widget::Widget(QWidget *parent)
     m_curAudioCamera = NULL;
     m_curAudioScreen = NULL;
     m_imageCapture = NULL;
+
+    m_senderCamera = new SenderThread(pNDI_send_camera, &NDI_video_frame_camera, NULL);
+    m_senderScreen = new SenderThread(pNDI_send_screen, &NDI_video_frame_screen, NULL);
+    m_senderAudioCamera = new SenderThread(pNDI_send_camera, NULL, &NDI_audio_frame_camera);
+    m_senderAudioScreen = new SenderThread(pNDI_send_screen, NULL, &NDI_audio_frame_screen);
 
     NDI_video_frame_camera.p_data = NULL;
     NDI_video_frame_screen.p_data = NULL;
@@ -152,26 +205,40 @@ void Widget::on_pb_start_clicked()
 
     m_screenTimer->start(1000.0f / frameRates[ui->cb_screen_frame_rate->currentIndex()]);
     m_cameraTimer->start(1000.0f / frameRates[ui->cb_camera_frame_rate->currentIndex()]);
+
+    m_senderCamera->Start();
+    m_senderScreen->Start();
+    m_senderAudioCamera->Start();
+    m_senderAudioScreen->Start();
 }
 
 void Widget::on_audio_camera(float *data, qint64 len)
 {
-    for (int i = 0; i < len; i++)
-        NDI_audio_frame_camera.p_data[i] = data[i];
+    SendData* sdata = new SendData;
+    sdata->buf = new char[len * sizeof(float)];
+    sdata->len = len * sizeof(float);
+    memcpy((void*)sdata->buf, data, len * sizeof(float));
 
-    NDIlib_send_send_audio_v2(pNDI_send_camera, &NDI_audio_frame_camera);
+    m_senderAudioCamera->Push(sdata);
 }
 
 void Widget::on_audio_screen(float *data, qint64 len)
 {
-    for (int i = 0; i < len; i++)
-        NDI_audio_frame_screen.p_data[i] = data[i];
+    SendData* sdata = new SendData;
+    sdata->buf = new char[len * sizeof(float)];
+    sdata->len = len * sizeof(float);
+    memcpy((void*)sdata->buf, data, len * sizeof(float));
 
-    NDIlib_send_send_audio_v2(pNDI_send_screen, &NDI_audio_frame_screen);
+    m_senderAudioScreen->Push(sdata);
 }
 
 void Widget::on_pb_stop_clicked()
 {
+    m_senderCamera->Stop();
+    m_senderScreen->Stop();
+    m_senderAudioCamera->Stop();
+    m_senderAudioScreen->Stop();
+
     ui->pb_start->setEnabled(true);
     ui->pb_stop->setEnabled(false);
 
@@ -211,7 +278,7 @@ void Widget::on_pb_close_clicked()
     exit(0);
 }
 
-void Widget::makeVideoFrame_RGBA(NDIlib_video_frame_v2_t *frame, QPixmap pix)
+void Widget::makeVideoFrame_RGBA(SendData *sdata, QPixmap pix)
 {
     QImage img = pix.toImage();
     if (img.format() != QImage::Format_RGBA8888)
@@ -219,26 +286,31 @@ void Widget::makeVideoFrame_RGBA(NDIlib_video_frame_v2_t *frame, QPixmap pix)
     Q_ASSERT(img.byteCount() == pix.width() * pix.height() * 4);
 
     const uchar* data = img.constBits();
-    memcpy((void*)frame->p_data, data, img.byteCount());
+    sdata->len = img.byteCount();
+    sdata->buf = new char[sdata->len];
+    memcpy((void*)sdata->buf, data, img.byteCount());
 }
 
-void Widget::makeVideoFrame_UYVY(NDIlib_video_frame_v2_t *frame, QPixmap pix)
+void Widget::makeVideoFrame_UYVY(SendData *sdata, QPixmap pix)
 {
     std::vector<unsigned char> data = convertQPixmapToUYVY(pix);
     Q_ASSERT(data.size() == pix.width() * pix.height() * 2);
 
-    memcpy((void*)frame->p_data, data.data(), data.size());
+    sdata->len = data.size();
+    sdata->buf = new char[sdata->len];
+    memcpy((void*)sdata->buf, data.data(), data.size());
 }
 
 void Widget::on_screen_timeout()
 {
     if (m_curScreen) {
         QPixmap screen = grabWindow(0, m_curScreen->geometry());
+        SendData *data = new SendData;
         if (ui->cb_screen_compression->currentIndex() == 0)
-            makeVideoFrame_UYVY(&NDI_video_frame_screen, screen);
+            makeVideoFrame_UYVY(data, screen);
         else
-            makeVideoFrame_RGBA(&NDI_video_frame_screen, screen);
-        NDIlib_send_send_video_v2(pNDI_send_screen, &NDI_video_frame_screen);
+            makeVideoFrame_RGBA(data, screen);
+        m_senderScreen->Push(data);
     }
 }
 
@@ -251,11 +323,13 @@ void Widget::on_camera_timeout()
 
 void Widget::on_camera_image(int id, const QImage& img)
 {
+    SendData *data = new SendData;
     if (ui->cb_camera_compression->currentIndex() == 0)
-        makeVideoFrame_UYVY(&NDI_video_frame_camera, QPixmap::fromImage(img));
+        makeVideoFrame_UYVY(data, QPixmap::fromImage(img));
     else
-        makeVideoFrame_RGBA(&NDI_video_frame_camera, QPixmap::fromImage(img));
+        makeVideoFrame_RGBA(data, QPixmap::fromImage(img));
     NDIlib_send_send_video_v2(pNDI_send_camera, &NDI_video_frame_camera);
+    m_senderCamera->Push(data);
 }
 
 void Widget::on_cb_camera_audio_currentIndexChanged(int index)
