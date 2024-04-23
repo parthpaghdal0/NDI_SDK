@@ -38,6 +38,7 @@ void SenderThread::run() {
     while (m_isRunning) {
         m_mutex.lock();
         if (m_data.empty()) {
+            msleep(1);
             m_mutex.unlock();
             continue;
         }
